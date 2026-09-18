@@ -21,6 +21,7 @@ class Assumptions:
     market_rate: float = 0.035
     lapse_sensitivity: float = 2.0
     max_lapse_rate: float = 0.35
+    shock_multiplier: float = 2.5
 
     def surrender_charge_at(self, year_index: int) -> float:
         """Surrender charge applying in a given projection year (0-based)."""
@@ -29,10 +30,12 @@ class Assumptions:
         return 0.0
 
     def lapse_rate_at(self, year_index: int) -> float:
-        """Lapse rate for a given projection year (0-based), rising when the
-        market rate exceeds the crediting rate on offer."""
+        """Lapse rate for a given projection year (0-based). Rises with the
+        market rate gap, and spikes once the surrender charge expires."""
         excess = max(0.0, self.market_rate - self.crediting_rate)
         rate = self.lapse_rate + self.lapse_sensitivity * excess
+        if self.surrender_charge_at(year_index) == 0.0:
+            rate = rate * self.shock_multiplier
         return min(rate, self.max_lapse_rate)
 
 
