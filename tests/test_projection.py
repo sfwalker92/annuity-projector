@@ -65,3 +65,34 @@ def test_higher_crediting_rate_increases_pv_of_outgo():
     pv_richer = present_value(project(richer), richer.discount_rate)
 
     assert pv_richer > pv_base
+
+def test_dynamic_lapse_is_inactive_at_default_assumptions():
+    """Market rate equals crediting rate, so the dynamic term is zero."""
+    a = Assumptions()
+
+    assert a.lapse_rate_at(0) == pytest.approx(a.lapse_rate)
+
+
+def test_lapses_rise_when_market_beats_crediting():
+    """2% behind the market, at sensitivity 2.0, adds 4% to the lapse rate."""
+    a = Assumptions(market_rate=0.055)
+
+    assert a.lapse_rate_at(0) == pytest.approx(0.10)
+
+    base_end = project(Assumptions())[-1].inforce_end
+    stressed_end = project(a)[-1].inforce_end
+    assert stressed_end < base_end
+
+
+def test_lapse_rate_does_not_fall_below_base():
+    """Paying above market does not reduce lapses below the base rate."""
+    a = Assumptions(market_rate=0.01)
+
+    assert a.lapse_rate_at(0) == pytest.approx(a.lapse_rate)
+
+
+def test_lapse_rate_is_capped():
+    """However far behind the market, the rate stops at max_lapse_rate."""
+    a = Assumptions(market_rate=0.50)
+
+    assert a.lapse_rate_at(0) == pytest.approx(a.max_lapse_rate)
