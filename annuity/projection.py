@@ -18,12 +18,22 @@ class Assumptions:
     lapse_rate: float = 0.06
     surrender_charge: tuple = (0.07, 0.06, 0.05, 0.04, 0.03, 0.0)
     years: int = 10
+    market_rate: float = 0.035
+    lapse_sensitivity: float = 2.0
+    max_lapse_rate: float = 0.35
 
     def surrender_charge_at(self, year_index: int) -> float:
         """Surrender charge applying in a given projection year (0-based)."""
         if year_index < len(self.surrender_charge):
             return self.surrender_charge[year_index]
         return 0.0
+
+    def lapse_rate_at(self, year_index: int) -> float:
+        """Lapse rate for a given projection year (0-based), rising when the
+        market rate exceeds the crediting rate on offer."""
+        excess = max(0.0, self.market_rate - self.crediting_rate)
+        rate = self.lapse_rate + self.lapse_sensitivity * excess
+        return min(rate, self.max_lapse_rate)
 
 
 @dataclass
@@ -52,7 +62,7 @@ def project(a: Assumptions) -> list[YearResult]:
         death_outgo = deaths * account_value
 
         survivors = inforce_start - deaths
-        lapses = survivors * a.lapse_rate
+        lapses = survivors * a.lapse_rate_at(t)
         surrender_value = account_value * (1 - a.surrender_charge_at(t))
         surrender_outgo = lapses * surrender_value
 
