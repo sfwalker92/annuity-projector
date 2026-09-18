@@ -31,9 +31,11 @@ class Assumptions:
 
     def lapse_rate_at(self, year_index: int) -> float:
         """Lapse rate for a given projection year (0-based). Rises with the
-        market rate gap, and spikes once the surrender charge expires."""
+        market rate gap, spikes once the surrender charge expires, and caps
+        the dynamic uplift rather than the total rate."""
         excess = max(0.0, self.market_rate - self.crediting_rate)
-        rate = self.lapse_rate + self.lapse_sensitivity * excess
+        uplift = min(self.lapse_sensitivity * excess, self.max_lapse_rate - self.lapse_rate)
+        rate = self.lapse_rate + uplift
         if self.surrender_charge_at(year_index) == 0.0:
             rate = rate * self.shock_multiplier
         return min(rate, self.max_lapse_rate)
