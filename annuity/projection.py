@@ -30,10 +30,11 @@ class Assumptions:
 
     def lapse_rate_at(self, year_index: int) -> float:
         """Lapse rate for a given projection year (0-based), rising when the
-        market rate exceeds the crediting rate on offer."""
+        market rate exceeds the crediting rate. The dynamic uplift is capped,
+        rather than the total rate."""
         excess = max(0.0, self.market_rate - self.crediting_rate)
-        rate = self.lapse_rate + self.lapse_sensitivity * excess
-        return min(rate, self.max_lapse_rate)
+        uplift = min(self.lapse_sensitivity * excess, self.max_lapse_rate - self.lapse_rate)
+        return self.lapse_rate + uplift
 
 
 @dataclass
